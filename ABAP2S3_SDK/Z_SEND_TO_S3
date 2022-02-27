@@ -1,0 +1,112 @@
+*&---------------------------------------------------------------------*
+*& Report Z_SEND_TO_S3
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT Z_SEND_TO_S3.
+
+PARAMETERS P_CMD TYPE SXPGCOTABE-NAME DEFAULT 'ZAWSCLI' OBLIGATORY.
+
+PARAMETERS P_PATH TYPE CHAR100 DEFAULT '/usr/sap/trans/makt.txt' LOWER CASE.
+
+*PARAMETERS P_CHECK TYPE C AS CHECKBOX.
+
+DATA GT_MAKT TYPE TABLE OF MAKT.
+
+
+INITIALIZATION.
+
+START-OF-SELECTION.
+
+*  IF P_CHECK = 'X'.
+*    PERFORM FRM_SEND_DATA USING P_PATH.
+*  ENDIF.
+  SUBMIT Z_GET_DATA_FOR_S3 AND RETURN.
+
+  PERFORM FRM_SEND_FILE.
+
+
+*&---------------------------------------------------------------------*
+*&      Form  FRM_SEND_DATA
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*      -->P_P_PATH  text
+*----------------------------------------------------------------------*
+FORM FRM_SEND_DATA  USING I_PATH.
+
+  SELECT *
+    FROM MAKT
+    INTO TABLE GT_MAKT
+    UP TO 20 ROWS.
+
+  OPEN DATASET I_PATH FOR OUTPUT IN TEXT MODE ENCODING DEFAULT.
+  LOOP AT GT_MAKT INTO DATA(LS_MAKT).
+    TRANSFER LS_MAKT TO I_PATH.
+  ENDLOOP.
+  CLOSE DATASET I_PATH.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Form  FRM_SEND_FILE
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM FRM_SEND_FILE .
+
+  DATA L_STATUS TYPE EXTCMDEXEX-STATUS.
+  DATA L_CODE   TYPE EXTCMDEXEX-EXITCODE.
+  DATA LT_BTCXPM TYPE TABLE OF BTCXPM.
+  DATA L_ADD    type SXPGCOLIST-PARAMETERS.
+
+  MESSAGE S001(ZS3) WITH P_PATH INTO L_ADD.
+
+  CALL FUNCTION 'SXPG_COMMAND_EXECUTE'
+    EXPORTING
+      COMMANDNAME                   = P_CMD
+      ADDITIONAL_PARAMETERS         = L_ADD
+*     OPERATINGSYSTEM               = SY-OPSYS
+*     TARGETSYSTEM                  = SY-HOST
+*     DESTINATION                   =
+*     STDOUT                        = 'X'
+*     STDERR                        = 'X'
+*     TERMINATIONWAIT               = 'X'
+*     TRACE                         =
+*     DIALOG                        =
+    IMPORTING
+      STATUS                        = L_STATUS
+      EXITCODE                      = L_CODE
+ TABLES
+     EXEC_PROTOCOL                 = LT_BTCXPM
+    EXCEPTIONS
+      NO_PERMISSION                 = 1
+      COMMAND_NOT_FOUND             = 2
+      PARAMETERS_TOO_LONG           = 3
+      SECURITY_RISK                 = 4
+      WRONG_CHECK_CALL_INTERFACE    = 5
+      PROGRAM_START_ERROR           = 6
+      PROGRAM_TERMINATION_ERROR     = 7
+      X_ERROR                       = 8
+      PARAMETER_EXPECTED            = 9
+      TOO_MANY_PARAMETERS           = 10
+      ILLEGAL_COMMAND               = 11
+      WRONG_ASYNCHRONOUS_PARAMETERS = 12
+      CANT_ENQ_TBTCO_ENTRY          = 13
+      JOBCOUNT_GENERATION_ERROR     = 14
+      OTHERS                        = 15.
+  IF SY-SUBRC <> 0.
+* Implement suitable error handling here
+  ENDIF.
+
+  IF L_STATUS <> 'E'.
+    MESSAGE 'UPLOAD SUCCESS' TYPE  'S'.
+  ENDIF.
+
+  LOOP AT LT_BTCXPM INTO DATA(LS_BTCXPM).
+    WRITE LS_BTCXPM.
+  ENDLOOP.
+
+ENDFORM.
