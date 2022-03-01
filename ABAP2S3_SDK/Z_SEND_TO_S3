@@ -1,7 +1,8 @@
 *&---------------------------------------------------------------------*
 *& Report Z_SEND_TO_S3
 *&---------------------------------------------------------------------*
-*&
+*& Randy Qin
+*& 20210420
 *&---------------------------------------------------------------------*
 REPORT Z_SEND_TO_S3.
 
@@ -13,14 +14,10 @@ PARAMETERS P_PATH TYPE CHAR100 DEFAULT '/usr/sap/trans/makt.txt' LOWER CASE.
 
 DATA GT_MAKT TYPE TABLE OF MAKT.
 
-
 INITIALIZATION.
 
 START-OF-SELECTION.
 
-*  IF P_CHECK = 'X'.
-*    PERFORM FRM_SEND_DATA USING P_PATH.
-*  ENDIF.
   SUBMIT Z_GET_DATA_FOR_S3 AND RETURN.
 
   PERFORM FRM_SEND_FILE.

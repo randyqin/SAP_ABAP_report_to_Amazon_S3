@@ -1,8 +1,7 @@
 *&---------------------------------------------------------------------*
 *& Report Z_SEND_TO_S3
 *&---------------------------------------------------------------------*
-*& Randy Qin
-*& 20210420
+*&
 *&---------------------------------------------------------------------*
 REPORT Z_GET_DATA_FOR_S3.
 
@@ -35,6 +34,8 @@ START-OF-SELECTION.
 *----------------------------------------------------------------------*
 FORM FRM_SEND_DATA  USING I_PATH.
 
+  DATA L_tab type c value cl_abap_char_utilities=>HORIZONTAL_TAB.
+  DATA L_STR TYPE CHAR200.
   SELECT *
     FROM MAKT
     INTO TABLE GT_MAKT
@@ -42,7 +43,13 @@ FORM FRM_SEND_DATA  USING I_PATH.
 
   OPEN DATASET I_PATH FOR OUTPUT IN TEXT MODE ENCODING DEFAULT.
   LOOP AT GT_MAKT INTO DATA(LS_MAKT).
-    TRANSFER LS_MAKT TO I_PATH.
+    CONCATENATE LS_MAKT-MATNR
+                LS_MAKT-SPRAS
+                LS_MAKT-MAKTX
+                LS_MAKT-MAKTG
+           INTO L_STR SEPARATED BY L_TAB.
+    TRANSFER L_STR TO I_PATH.
+    CLEAR L_STR.
   ENDLOOP.
   CLOSE DATASET I_PATH.
 
